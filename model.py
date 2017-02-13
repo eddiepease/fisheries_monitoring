@@ -5,6 +5,9 @@
 import tensorflow as tf
 import numpy as np
 
+#TODO: add Rob Collyer variable initialisation technique
+#W = tf.Variable(tf.truncated_normal([convo_patch, convo_patch, num_channels, convo_depth1],stddev= 1.0 / np.sqrt(float(convo_neurons1))),name='weights')
+
 #creating the main model
 def create_model(input_array,retained_pc):
 

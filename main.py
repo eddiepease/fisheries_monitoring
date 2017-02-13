@@ -7,58 +7,96 @@ import tensorflow as tf
 
 from read_data import read_and_normalize_train_data,read_and_normalize_test_data
 from model import create_model
+from helper_code import create_random_batch,create_validation_set,save_model
 
-def train(scores,y_true):
-    learning_rate = 0.0005
-    xent = tf.nn.softmax_cross_entropy_with_logits(scores, y_true)
-    train_step = tf.train.AdamOptimizer(learning_rate).minimize(xent)
+def train(model_folder):
 
-    false_prediction = tf.not_equal(tf.argmax(scores, 1), tf.argmax(y_true, 1))
-    loss = tf.reduce_mean(tf.cast(false_prediction, tf.float32))
+    X_train,y_train,_ = read_and_normalize_train_data()
+    #X_train,y_train = create_random_batch(X_train,y_train,5000)
+    # X_test,_ = read_and_normalize_test_data()
+
+    #create valid set
+    X_train, y_train, X_valid, y_valid = create_validation_set(X_train,y_train,valid_pc=0.3)
+
+    # define placeholders for tf model
+    x = tf.placeholder(tf.float32, shape=[None, 32, 32, 3])
+    y_true = tf.placeholder(tf.float32, shape=[None, 8])
+    retained_pc = tf.placeholder(tf.float32)
+
+    scores = create_model(x, retained_pc=0.5)
+
+    cross_entropy = tf.nn.softmax_cross_entropy_with_logits(scores, y_true)
+    train_step = tf.train.AdamOptimizer().minimize(cross_entropy)
+
+    true_prediction = tf.equal(tf.argmax(scores, 1), tf.argmax(y_true, 1))
+    accuracy = tf.reduce_mean(tf.cast(true_prediction, tf.float32))
+
+    #calculate logloss
+    y_pred = tf.nn.softmax(scores)
+    logloss = tf.reduce_mean(-tf.reduce_sum(tf.log(y_pred)))
+
 
     batch_size = 64
-    n_iter = 50001  # 20000
-    print_freq = 2000  # print out every 1000
-    # df_index = [i * print_freq for i in range(int(n_iter / print_freq))]
-    # results = pd.DataFrame(0.0, index=df_index, columns=['train_loss', 'test_loss'])
-    # model_folder = 'models/4_a/'
-    # model_name = 'model.checkpoint'
+    epochs = 30
 
     # train the model
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
+        for epoch in range(epochs):
+            print('----- Epoch', epoch, '-----')
+            n_iter = X_train.shape[0] // batch_size
+            total_accuracy = 0
+            for i in range(n_iter):
+                X_batch, y_batch = create_random_batch(X_train, y_train, batch_size)
+                train_step.run(feed_dict={x: X_batch, y_true: y_batch, retained_pc:0.5})
+                current_accuracy = accuracy.eval(feed_dict={x: X_batch, y_true: y_batch, retained_pc:0.5})
+                total_accuracy += current_accuracy
 
-        for iter in range(n_iter):
-            batch = mnist.train.next_batch(batch_size)
-            train_step.run(feed_dict={x: batch[0], y_true: batch[1], retained_pc: 0.5})
+            print(' Train Accuracy:', total_accuracy / n_iter)
 
-            if iter % print_freq == 0:  # print out every 1000
-                print('----- Iteration', iter, '-----')
+            # calc valid loss
+            train_logloss = logloss.eval(feed_dict={x: X_train, y_true: y_train, retained_pc: 0.5})
+            print(' Train Logloss:', train_logloss)
 
-                # calc train loss
-                train_loss = loss.eval(feed_dict={x: mnist.train.images, y_true: mnist.train.labels, retained_pc: 1.0})
-                results.loc[iter, 'train_loss'] = round(train_loss, 3)
-                print(' Train loss:', train_loss)
+            # calc valid loss
+            test_logloss = logloss.eval(feed_dict={x: X_valid, y_true: y_valid, retained_pc:0.5})
+            print(' Test Logloss:', test_logloss)
 
-                # calc train loss
-                test_loss = loss.eval(feed_dict={x: mnist.test.images, y_true: mnist.test.labels, retained_pc: 1.0})
-                results.loc[iter, 'test_loss'] = round(test_loss, 3)
-                print(' Test loss:', test_loss)
+        #save the model with checkpoint
+        save_model(sess, model_folder)
 
-                # calc test prediction
-                test_prediction = tf.argmax(scores, 1).eval(feed_dict={x: mnist.test.images, y_true: mnist.test.labels})
+
+# #testing the model
+# def evaluate_model(model_folder):
+#     with tf.Session() as sess:
+#         #load model
+#         saver = tf.train.Saver()
+#         saver.restore(sess, model_folder + 'model.checkpoint')
+#
+#         #run test set evaluation
+#         print('Running Test evaluation')
+#
+#         # calc test prediction
+#         test_prediction = tf.argmax(scores, 1).eval(feed_dict={x: mnist.test.images, y_true: mnist.test.labels})
+#
+#         test_prediction = test_prediction.eval(feed_dict={x: mnist.test.images, y_true: mnist.test.labels})
+#         print(test_loss)
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
-    #X_train,y_train,_ = read_and_normalize_train_data()
-    #X_test,_ = read_and_normalize_test_data()
 
-    #define placeholders for tf model
-    x = tf.placeholder(tf.float32, shape=[None, 32,32,3])
-    y_true = tf.placeholder(tf.float32, shape=[None, 8])
-    retained_pc = tf.placeholder(tf.float32)
+    model_folder = 'saved_model/'
 
-    scores = create_model(x,retained_pc=0.5)
+    train(model_folder)
 
+    #TODO: work out the discrepancy in loss
+    #TODO: work out how to apply to test set
+    #TODO: set up visualation via tensorboard
 
 
