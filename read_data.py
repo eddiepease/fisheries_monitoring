@@ -18,10 +18,10 @@ def get_im(path):
     #imsave('test.png',resized) # to test resize working
     return resized
 
-#unit test
-im_path = 'data/train/ALB/img_00003.jpg'
-im = get_im(im_path)
-imsave('test.jpg',im)
+# #unit test
+# im_path = 'data/train/ALB/img_00003.jpg'
+# im = get_im(im_path)
+# imsave('test.jpg',im)
 
 def one_hot(X):
     one_hot_label = LabelBinarizer().fit_transform(X)
@@ -182,8 +182,8 @@ def save_normalised_data():
     np.save('data/test_data.npy', test_data)
     np.save('data/test_id.npy', test_id)
 
-#
-# if __name__ == "__main__":
-#     save_normalised_data()
+
+if __name__ == "__main__":
+    save_normalised_data()
 
 
