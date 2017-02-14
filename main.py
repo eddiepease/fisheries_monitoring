@@ -1,97 +1,93 @@
-###################
-# code to solve qu_1_a
-##################
+##########
+#code to solve fish problem
+##########
 
-import tensorflow as tf
 import numpy as np
-from tensorflow.examples.tutorials.mnist import input_data
-from helper_code import define_scope,fc_layer,conv_layer,max_pooling,flatten,create_random_batch
-import random
+import tensorflow as tf
+
+from read_data import load_saved_normalised_train_data,load_saved_normalised_test_data
+from model import create_model
+from helper_code import create_random_batch,create_validation_set,save_model,create_submission
+
+np.random.seed(2016)
+
+def train(model_folder):
+
+    X_train,y_train,id_train = load_saved_normalised_train_data(saved=True)
+    #X_train,y_train = create_random_batch(X_train,y_train,5000)
+
+    #create valid set
+    X_train, y_train, X_valid, y_valid = create_validation_set(X_train,y_train,valid_pc=0.5)
+
+    # define placeholders for tf model
+    x = tf.placeholder(tf.float32, shape=[None, 32, 32, 3])
+    y_true = tf.placeholder(tf.float32, shape=[None, 8])
+    retained_pc = tf.placeholder(tf.float32)
+
+    scores = create_model(x, retained_pc)
+    probs = tf.nn.softmax(scores)
+    tf.add_to_collection('probs', probs)
+
+    cross_entropy = tf.nn.softmax_cross_entropy_with_logits(scores, y_true)
+    train_step = tf.train.AdamOptimizer(learning_rate=0.005).minimize(cross_entropy)
+
+    true_prediction = tf.equal(tf.argmax(scores, 1), tf.argmax(y_true, 1))
+    accuracy = tf.reduce_mean(tf.cast(true_prediction, tf.float32))
+
+    #calculate logloss
+    logloss = tf.reduce_mean(cross_entropy)
 
 
-class Model:
-    def __init__(self, x, y_true):
-        self.x = x
-        self.y_true = y_true
-        self.initial_input_size = int(self.x.get_shape()[1])
-        self.target_size = int(self.y_true.get_shape()[1])
-        self.build_model
-        self.optimize
-        self.accuracy
-        self.loss
+    batch_size = 64
+    epochs = 2
 
-    @define_scope
-    def build_model(self):
-        layer_1 = fc_layer(self.x,self.initial_input_size,128,
-                           layer_name='layer_1')
-        layer_2 = fc_layer(layer_1,128,self.target_size,
-                           layer_name='second_layer',act=tf.identity)
-        return layer_2
+    # train the model
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        for epoch in range(epochs):
+            print('----- Epoch', epoch, '-----')
+            n_iter = X_train.shape[0] // batch_size
+            total_accuracy = 0
+            for i in range(n_iter):
+                X_batch, y_batch = create_random_batch(X_train, y_train, batch_size)
+                train_step.run(feed_dict={x: X_batch, y_true: y_batch, retained_pc:0.5})
+                current_accuracy = accuracy.eval(feed_dict={x: X_batch, y_true: y_batch, retained_pc:0.5})
+                total_accuracy += current_accuracy
 
-    @define_scope
-    def optimize(self):
-        cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(self.build_model, self.y_true))
-        optimizer = tf.train.GradientDescentOptimizer(0.5)
-        return optimizer.minimize(cross_entropy)
+            print(' Train Accuracy:', total_accuracy / n_iter)
 
-    @define_scope
-    def accuracy(self):
-        correct_prediction = tf.equal(tf.argmax(tf.nn.softmax(self.build_model), 1),tf.argmax(self.y_true, 1))
-        return tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+            # calc train loss
+            train_logloss = logloss.eval(feed_dict={x: X_train, y_true: y_train, retained_pc: 1.0})
+            print(' Train Logloss:', train_logloss)
 
-    @define_scope
-    def loss(self):
-        mistakes = tf.not_equal(tf.argmax(tf.nn.softmax(self.build_model), 1),tf.argmax(self.y_true, 1))
-        return tf.reduce_mean(tf.cast(mistakes,tf.float32))
+            # calc valid loss
+            test_logloss = logloss.eval(feed_dict={x: X_valid, y_true: y_valid, retained_pc:1.0})
+            print(' Test Logloss:', test_logloss)
 
-    # @define_scope
-    # def summaries(self):
-    #     tf.summary.scalar('accuracy', self.accuracy)
-    #     tf.summary.scalar('cross_entropy',self.loss)
-    #     merged = tf.summary.merge_all()
-    #     return merged
+
+        #save the model with checkpoint
+        save_model(sess, model_folder)
+
+        #evaluate model
+        evaluate_model(x,retained_pc,probs)
+
+
+#TODO: work out how to have this as a standalone function
+def evaluate_model(x,retained_pc,probs):
+    X_test, id_test = load_saved_normalised_test_data(saved=True)
+    test_probs = probs.eval(feed_dict={x: X_test, retained_pc: 1.0})
+    create_submission(test_probs,id_test,'first_attempt')
 
 
 
 if __name__ == "__main__":
 
-    # TODO: work out how to use tensorboard to get a good visualisation of the training of model
+    model_folder = 'saved_model/'
+    np.random.seed(2016)
 
-    # import dataset with one-hot class encoding
-    mnist = input_data.read_data_sets('data/', one_hot=True)
+    train(model_folder)
 
-    #define placeholders and model
-    x = tf.placeholder(tf.float32, shape=[None,784])
-    y_true = tf.placeholder(tf.float32, shape=[None, 10])
-    nn_model = Model(x, y_true)
-    epochs = 25
-    batch_size = 64
+    #TODO: set up visualation via tensorboard
+    #TODO: introduce seed
 
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        for epoch in range(epochs):
-            print('----- Epoch', epoch, '-----')
-            n_iter = mnist.train.images.shape[0] // batch_size
-            total_loss = 0
-            for i in range(n_iter):
-                x_batch,y_batch = create_random_batch(mnist.train.images,mnist.train.labels,batch_size)
-                nn_model.optimize.run(feed_dict={x:x_batch,y_true:y_batch})
-                current_loss = nn_model.loss.eval(feed_dict={x:x_batch,y_true:y_batch})
-                total_loss += current_loss
 
-            print(' Train loss:', total_loss / n_iter)
-
-            #calc train accuracy
-            train_accuracy = nn_model.accuracy.eval(feed_dict={x:mnist.train.images,y_true:mnist.train.labels})
-            print(' Train accuracy:', train_accuracy)
-
-            #calc test accuracy
-            test_accuracy = nn_model.accuracy.eval(feed_dict={x: mnist.test.images, y_true: mnist.test.labels})
-            print(' Test accuracy:', test_accuracy)
-
-            # #calc summary
-            # if epoch % 5 == 0:
-            #     train_writer = tf.summary.FileWriter('/tmp/mnist_logs' + '/train', sess.graph)
-            #     #test_writer = tf.summary.FileWriter('/tmp/mnist_logs' + '/test')
-            #     summary = nn_model.summaries.eval(feed_dict={x: mnist.test.images, y_true: mnist.test.labels})
-            #     train_writer.add_summary(summary, i)

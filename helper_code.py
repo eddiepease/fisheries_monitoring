@@ -4,6 +4,13 @@
 import functools
 import tensorflow as tf
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
+import datetime
+
+np.random.seed(2016)
 
 #function to define the variable scope
 def define_scope(function):
@@ -19,48 +26,21 @@ def define_scope(function):
 
     return decorator
 
-#function to generically define a fully connected layer
-def fc_layer(input_tensor, input_size, output_size, layer_name, act=tf.nn.relu):
-    with tf.name_scope(layer_name):
-        W = weights([input_size, output_size])
-        b = bias(output_size)
-        z = tf.matmul(input_tensor, W) + b
-        activations = act(z)
-        return activations
 
-#function to generically define a convolutional layer
-def conv_layer(input_tensor,patch_size,input_size,output_size,stride_shape,padding,layer_name,act=tf.nn.relu):
-    with tf.name_scope(layer_name):
-        W = weights([patch_size,patch_size,input_size,output_size])
-        b = bias(output_size)
-        z = tf.nn.conv2d(input=input_tensor,filter=W,strides=stride_shape,
-                         padding=padding) + b
-        activations = act(z)
-        return activations
+#TODO: function which creates a confusion matrix
+def create_confusion_matrix(prediction,y_label,name):
 
-#function to generically define a max pooling layer
-def max_pooling(input_tensor,pool_size,padding,layer_name):
-    with tf.name_scope(layer_name):
-        result = tf.nn.max_pool(input_tensor,ksize=[1,pool_size,pool_size,1],
-                                strides=[1,pool_size,pool_size,1],padding=padding)
-        return result
+    test_true = pd.Series(np.argmax(y_label, axis=1), name="Actual")
+    test_prediction = pd.Series(prediction, name="Pred")
+    con_mat = pd.crosstab(test_true, test_prediction)
 
-#defining weights
-def weights(shape):
-    W = tf.truncated_normal(shape)
-    return tf.Variable(W)
+    #plot heatmap
+    ax = sns.heatmap(con_mat, annot=True, fmt='.4g')
+    plt.savefig('figures/' + name + '.png')
 
-#defining bias
-def bias(output_size):
-    b = tf.constant(0.1, dtype=tf.float32, shape=[output_size])
-    return tf.Variable(b)
+    return con_mat
 
-#function to flatten a convolutional layer
-def flatten(input_tensor):
-    shape = input_tensor.get_shape().as_list()  # a list: [None, dim_1, dim_2, dim_3 etc]
-    dim = np.prod(shape[1:])  # dim = dim_1 * dim_2 * dim_3 etc
-    result = tf.reshape(input_tensor, [-1, dim])
-    return result,dim
+
 
 #function to generate random batches of the data
 def create_random_batch(x,y,batch_size):
@@ -68,3 +48,40 @@ def create_random_batch(x,y,batch_size):
     x_batch = x[indices]
     y_batch = y[indices]
     return x_batch,y_batch
+
+def create_validation_set(X,y,valid_pc):
+    len_data = X.shape[0]
+    valid_num = int(len_data*valid_pc)
+    index_valid = np.random.choice(len_data, valid_num,replace=False)
+    index_train = np.setdiff1d(np.array(range(0,len_data)),index_valid)
+
+    X_train,y_train = X[index_train],y[index_train]
+    X_valid,y_valid = X[index_valid],y[index_valid]
+
+    return X_train,y_train,X_valid,y_valid
+
+# save the model params to the hard drive
+def save_model(session,model_folder):
+    if not os.path.exists(model_folder):
+        os.mkdir(model_folder)
+    saver = tf.train.Saver()
+    saver.save(session, model_folder + 'model.checkpoint')
+
+def create_submission(predictions, test_id, info):
+    result1 = pd.DataFrame(predictions, columns=['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT'])
+    result1.loc[:, 'image'] = pd.Series(test_id, index=result1.index)
+    now = datetime.datetime.now()
+    sub_file = 'results/submission_' + info + '_' + str(now.strftime("%Y-%m-%d-%H-%M")) + '.csv'
+    result1.to_csv(sub_file, index=False)
+
+
+# #unit test
+# X = np.random.rand(10,3)
+# y = np.random.rand(10,1)
+#
+# X_train,y_train,X_valid,y_valid = create_validation_set(X,y,0.7)
+#
+# print(X_train.shape)
+# print(y_train.shape)
+# print(X_valid.shape)
+# print(y_valid.shape)
