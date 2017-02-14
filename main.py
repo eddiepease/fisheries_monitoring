@@ -23,7 +23,7 @@ def train(model_folder):
     y_true = tf.placeholder(tf.float32, shape=[None, 8])
     retained_pc = tf.placeholder(tf.float32)
 
-    scores = create_model(x, retained_pc=0.5)
+    scores = create_model(x, retained_pc)
 
     cross_entropy = tf.nn.softmax_cross_entropy_with_logits(scores, y_true)
     train_step = tf.train.MomentumOptimizer(learning_rate=1e-2,momentum=0.9,use_nesterov=True).minimize(cross_entropy)
@@ -35,9 +35,8 @@ def train(model_folder):
     #calculate logloss
     logloss = tf.reduce_mean(cross_entropy)
 
-
-    batch_size = 32
-    epochs = 10
+    batch_size = 64
+    epochs = 2
 
     # train the model
     with tf.Session() as sess:
@@ -62,39 +61,47 @@ def train(model_folder):
             test_logloss = logloss.eval(feed_dict={x: X_valid, y_true: y_valid, retained_pc:1.0})
             print(' Test Logloss:', test_logloss)
 
+            # #evaluation
+
+
         #save the model with checkpoint
         save_model(sess, model_folder)
 
-        #evaluate the model
+        # #evaluate the model
+        # y_test_dummy = np.random.rand(X_test.shape[0],8)
+        # test_probs = probs.eval(feed_dict={x: X_test,y_true: y_test_dummy,retained_pc:1.0})
+        # print(test_probs)
+
+        # print(sess.run(y_test, feed_dict={x: mnist.test.images}))
+
         
 
 
 
-
-
-#testing the model
-def evaluate_model(model_folder):
-
-    X_test, id_test = load_saved_normalised_test_data()
-
-    with tf.Session() as sess:
-        #load model
-        saver = tf.train.Saver()
-        saver.restore(sess, model_folder + 'model.checkpoint')
-
-        #run test set evaluation
-        print('Running Test evaluation')
-
-        # calc test prediction
-        test_scores = scores.eval()
-        test_prediction = tf.nn.softmax(scores)
-        test_prediction = tf.argmax(scores, 1).eval(feed_dict={x: mnist.test.images, y_true: mnist.test.labels})
+# #testing the model
+# def evaluate_model(model_folder):
+#
+#     X_test, id_test = load_saved_normalised_test_data()
+#
+#     with tf.Session() as sess:
+#         #load model
+#         saver = tf.train.Saver()
+#         saver.restore(sess, model_folder + 'model.checkpoint')
+#
+#         #run test set evaluation
+#         print('Running Test evaluation')
+#
+#         # calc test prediction
+#         test_scores = scores.eval()
+#         test_prediction = tf.nn.softmax(scores)
+#         test_prediction = tf.argmax(scores, 1).eval(feed_dict={x: mnist.test.images, y_true: mnist.test.labels})
 
 
 
 if __name__ == "__main__":
 
     model_folder = 'saved_model/'
+    np.random.seed(2016)
 
     train(model_folder)
 
