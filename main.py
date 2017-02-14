@@ -5,13 +5,13 @@
 import numpy as np
 import tensorflow as tf
 
-from read_data import read_and_normalize_train_data,read_and_normalize_test_data
+from read_data import load_saved_normalised_train_data,load_saved_normalised_test_data
 from model import create_model
 from helper_code import create_random_batch,create_validation_set,save_model
 
 def train(model_folder):
 
-    X_train,y_train,_ = read_and_normalize_train_data()
+    X_train,y_train,_ = load_saved_normalised_train_data(saved=True)
     #X_train,y_train = create_random_batch(X_train,y_train,5000)
     # X_test,_ = read_and_normalize_test_data()
 

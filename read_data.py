@@ -7,7 +7,8 @@ import numpy as np
 from skimage.io import imread,imsave
 from skimage.transform import resize
 from sklearn.preprocessing import LabelBinarizer
-
+import zipfile
+from PIL import Image
 
 
 
@@ -26,6 +27,45 @@ def one_hot(X):
 # test = np.array(['ALF','UGA','TER','ALF','TUE','UGA'])
 # test_output = one_hot(test)
 # print(test_output)
+
+#attempt to read from zipped file
+
+# def load_train_trial():
+#     X_train = []
+#     X_train_id = []
+#     y_train = []
+#     start_time = time.time()
+#
+#     print('Read train images')
+#     #folders = ['OTHER', 'SHARK']
+#     with zipfile.ZipFile('data/train.zip') as z:
+#         folders = ['OTHER', 'SHARK']
+#         for fld in folders:
+#             index = folders.index(fld)
+#             print('Load folder {} (Index: {})'.format(fld, index))
+#             files = [im for im in z.namelist() if str(fld) in im]
+#             files = files[1:len(files)]
+#             for im in files:
+#                 with z.open(im) as file:
+#                     flbase = im.split('/')[1]
+#                     img = np.array(Image.open(file))
+#                     X_train.append(img)
+#                     X_train_id.append(flbase)
+#                     y_train.append(index)
+#                 file.close()
+#
+#
+#
+#     print('Read train data time: {} seconds'.format(round(time.time() - start_time, 2)))
+#     return X_train, y_train, X_train_id
+#
+#
+# #unit test
+# X_train, y_train, X_train_id = load_train_trial()
+# print(len(X_train))
+# print(len(y_train))
+# print(len(X_train_id))
+
 
 def load_train():
     X_train = []
@@ -102,4 +142,28 @@ def read_and_normalize_test_data():
     return test_data, test_id
 
 
-#read_and_normalize_train_data()
+def load_saved_normalised_train_data(saved):
+
+    if saved == True:
+
+        train_data, train_target, train_id = np.load('data/train_data.npy'), \
+                                             np.load('data/train_target.npy'), \
+                                             np.load('data/train_id.npy')
+
+    else:
+        train_data, train_target, train_id = read_and_normalize_train_data()
+
+    return train_data, train_target, train_id
+
+
+def load_saved_normalised_test_data(saved):
+    if saved == True:
+
+        test_data, test_id = np.load('data/test_data.npy'), \
+                             np.load('data/test_id.npy')
+
+    else:
+        test_data, test_id = read_and_normalize_test_data()
+
+    return test_data, test_id
+
