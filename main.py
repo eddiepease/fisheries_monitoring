@@ -7,13 +7,14 @@ import tensorflow as tf
 
 from read_data import load_saved_normalised_train_data,load_saved_normalised_test_data
 from model import create_model
-from helper_code import create_random_batch,create_validation_set,save_model
+from helper_code import create_random_batch,create_validation_set,save_model,create_submission
+
+np.random.seed(2016)
 
 def train(model_folder):
 
-    X_train,y_train,index_train = load_saved_normalised_train_data(saved=True)
+    X_train,y_train,id_train = load_saved_normalised_train_data(saved=True)
     #X_train,y_train = create_random_batch(X_train,y_train,5000)
-    X_test, index_test = load_saved_normalised_test_data(saved=True)
 
     #create valid set
     X_train, y_train, X_valid, y_valid = create_validation_set(X_train,y_train,valid_pc=0.5)
@@ -24,16 +25,18 @@ def train(model_folder):
     retained_pc = tf.placeholder(tf.float32)
 
     scores = create_model(x, retained_pc)
+    probs = tf.nn.softmax(scores)
+    tf.add_to_collection('probs', probs)
 
     cross_entropy = tf.nn.softmax_cross_entropy_with_logits(scores, y_true)
-    train_step = tf.train.MomentumOptimizer(learning_rate=1e-2,momentum=0.9,use_nesterov=True).minimize(cross_entropy)
-    #SGD(lr=1e-2, decay=1e-6, momentum=0.9, nesterov=True)
+    train_step = tf.train.AdamOptimizer(learning_rate=0.005).minimize(cross_entropy)
 
     true_prediction = tf.equal(tf.argmax(scores, 1), tf.argmax(y_true, 1))
     accuracy = tf.reduce_mean(tf.cast(true_prediction, tf.float32))
 
     #calculate logloss
     logloss = tf.reduce_mean(cross_entropy)
+
 
     batch_size = 64
     epochs = 2
@@ -61,40 +64,19 @@ def train(model_folder):
             test_logloss = logloss.eval(feed_dict={x: X_valid, y_true: y_valid, retained_pc:1.0})
             print(' Test Logloss:', test_logloss)
 
-            # #evaluation
-
 
         #save the model with checkpoint
         save_model(sess, model_folder)
 
-        # #evaluate the model
-        # y_test_dummy = np.random.rand(X_test.shape[0],8)
-        # test_probs = probs.eval(feed_dict={x: X_test,y_true: y_test_dummy,retained_pc:1.0})
-        # print(test_probs)
-
-        # print(sess.run(y_test, feed_dict={x: mnist.test.images}))
-
-        
+        #evaluate model
+        evaluate_model(x,retained_pc,probs)
 
 
-
-# #testing the model
-# def evaluate_model(model_folder):
-#
-#     X_test, id_test = load_saved_normalised_test_data()
-#
-#     with tf.Session() as sess:
-#         #load model
-#         saver = tf.train.Saver()
-#         saver.restore(sess, model_folder + 'model.checkpoint')
-#
-#         #run test set evaluation
-#         print('Running Test evaluation')
-#
-#         # calc test prediction
-#         test_scores = scores.eval()
-#         test_prediction = tf.nn.softmax(scores)
-#         test_prediction = tf.argmax(scores, 1).eval(feed_dict={x: mnist.test.images, y_true: mnist.test.labels})
+#TODO: work out how to have this as a standalone function
+def evaluate_model(x,retained_pc,probs):
+    X_test, id_test = load_saved_normalised_test_data(saved=True)
+    test_probs = probs.eval(feed_dict={x: X_test, retained_pc: 1.0})
+    create_submission(test_probs,id_test,'first_attempt')
 
 
 
@@ -105,7 +87,6 @@ if __name__ == "__main__":
 
     train(model_folder)
 
-    #TODO: work out how to apply to test set + output result
     #TODO: set up visualation via tensorboard
     #TODO: introduce seed
 
