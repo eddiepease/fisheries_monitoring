@@ -13,27 +13,27 @@ def create_model(input_array,retained_pc):
 
     #conv layer 1
     model = conv_layer(input_array,patch_size=3,input_size=3,
-                       output_size=16,stride_shape=[1,1,1,1],padding='SAME',
-                       layer_name='conv_1_1') # output: 32 x 32 x 16
-    model = conv_layer(model,patch_size=3,input_size=16,
-                       output_size=16,stride_shape=[1,1,1,1],padding='SAME',
-                       layer_name='conv_1_2') # output: 32 x 32 x 16
-    model = max_pooling(model,pool_size=2,padding='SAME',layer_name='conv_1_3') #output: 16 x 16 x 16
+                       output_size=4,stride_shape=[1,1,1,1],padding='SAME',
+                       layer_name='conv_1_1') # output: 32 x 32 x 4
+    model = conv_layer(model,patch_size=3,input_size=4,
+                       output_size=4,stride_shape=[1,1,1,1],padding='SAME',
+                       layer_name='conv_1_2') # output: 32 x 32 x 4
+    model = max_pooling(model,pool_size=2,padding='SAME',layer_name='conv_1_3') #output: 16 x 16 x 4
 
     #conv layer 2
-    model = conv_layer(model,patch_size=3,input_size=16,
-                       output_size=32,stride_shape=[1,1,1,1],padding='SAME',
-                       layer_name='conv_2_1') #output: 16 x 16 x 32
-    model = conv_layer(model,patch_size=3,input_size=32,
-                       output_size=32,stride_shape=[1,1,1,1],padding='SAME',
-                       layer_name='conv_2_2') #output: 16 x 16 x 32
-    model = max_pooling(model,pool_size=2,padding='SAME',layer_name='conv_2_3') #output: 8 x 8 x 32
+    model = conv_layer(model,patch_size=3,input_size=4,
+                       output_size=8,stride_shape=[1,1,1,1],padding='SAME',
+                       layer_name='conv_2_1') #output: 16 x 16 x 8
+    model = conv_layer(model,patch_size=3,input_size=8,
+                       output_size=8,stride_shape=[1,1,1,1],padding='SAME',
+                       layer_name='conv_2_2') #output: 16 x 16 x 8
+    model = max_pooling(model,pool_size=2,padding='SAME',layer_name='conv_2_3') #output: 8 x 8 x 8
 
     #fc layer
     model,dim = flatten(model) # output: None x 2048
-    model = fc_layer(model, input_size=dim, output_size=64, layer_name='fc_1') #output: None x 64
+    model = fc_layer(model, input_size=dim, output_size=32, layer_name='fc_1') #output: None x 32
     model = tf.nn.dropout(model, retained_pc)
-    model = fc_layer(model, input_size=64, output_size=32,layer_name='fc_2') #output: None x 32
+    model = fc_layer(model, input_size=32, output_size=32,layer_name='fc_2') #output: None x 32
     model = tf.nn.dropout(model, retained_pc)
     model = fc_layer(model, input_size=32, output_size=8,layer_name='fc_3', act=tf.identity) #output: None x 8
 
