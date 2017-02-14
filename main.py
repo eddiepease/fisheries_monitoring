@@ -32,8 +32,7 @@ def train(model_folder):
     accuracy = tf.reduce_mean(tf.cast(true_prediction, tf.float32))
 
     #calculate logloss
-    y_pred = tf.nn.softmax(scores)
-    logloss = tf.reduce_mean(-tf.reduce_sum(tf.log(y_pred)))
+    logloss = tf.reduce_mean(cross_entropy)
 
 
     batch_size = 64
@@ -54,12 +53,12 @@ def train(model_folder):
 
             print(' Train Accuracy:', total_accuracy / n_iter)
 
-            # calc valid loss
-            train_logloss = logloss.eval(feed_dict={x: X_train, y_true: y_train, retained_pc: 0.5})
+            # calc train loss
+            train_logloss = logloss.eval(feed_dict={x: X_train, y_true: y_train, retained_pc: 1.0})
             print(' Train Logloss:', train_logloss)
 
             # calc valid loss
-            test_logloss = logloss.eval(feed_dict={x: X_valid, y_true: y_valid, retained_pc:0.5})
+            test_logloss = logloss.eval(feed_dict={x: X_valid, y_true: y_valid, retained_pc:1.0})
             print(' Test Logloss:', test_logloss)
 
         #save the model with checkpoint
@@ -95,8 +94,7 @@ if __name__ == "__main__":
 
     train(model_folder)
 
-    #TODO: work out the discrepancy in loss
-    #TODO: work out how to apply to test set
+    #TODO: work out how to apply to test set + output result
     #TODO: set up visualation via tensorboard
 
 
