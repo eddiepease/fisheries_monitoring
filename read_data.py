@@ -5,7 +5,7 @@ import glob
 import time
 import numpy as np
 from skimage.io import imread,imsave
-from skimage.transform import resize
+import scipy
 from sklearn.preprocessing import LabelBinarizer
 import zipfile
 from PIL import Image
@@ -14,9 +14,14 @@ from PIL import Image
 
 def get_im(path):
     img = imread(path)
-    resized = resize(img,(32,32,3))
+    resized = scipy.misc.imresize(img,(32,32,3))
     #imsave('test.png',resized) # to test resize working
     return resized
+
+#unit test
+im_path = 'data/train/ALB/img_00003.jpg'
+im = get_im(im_path)
+imsave('test.jpg',im)
 
 def one_hot(X):
     one_hot_label = LabelBinarizer().fit_transform(X)
@@ -166,4 +171,19 @@ def load_saved_normalised_test_data(saved):
         test_data, test_id = read_and_normalize_test_data()
 
     return test_data, test_id
+
+def save_normalised_data():
+    train_data, train_target, train_id = read_and_normalize_train_data()
+    test_data, test_id = read_and_normalize_test_data()
+
+    np.save('data/train_data.npy',train_data)
+    np.save('data/train_target.npy', train_target)
+    np.save('data/train_id.npy', train_id)
+    np.save('data/test_data.npy', test_data)
+    np.save('data/test_id.npy', test_id)
+
+#
+# if __name__ == "__main__":
+#     save_normalised_data()
+
 
