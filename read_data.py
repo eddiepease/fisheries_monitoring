@@ -79,7 +79,8 @@ def load_train():
     start_time = time.time()
 
     print('Read train images')
-    folders = ['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT']
+    #folders = ['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT']
+    folders = ['BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK']
     for fld in folders:
         index = folders.index(fld)
         print('Load folder {} (Index: {})'.format(fld, index))
@@ -181,6 +182,7 @@ def save_normalised_data():
     np.save('data/train_id.npy', train_id)
     np.save('data/test_data.npy', test_data)
     np.save('data/test_id.npy', test_id)
+
 
 
 if __name__ == "__main__":

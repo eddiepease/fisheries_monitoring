@@ -7,26 +7,23 @@ import numpy as np
 
 np.random.seed(2016)
 
-#TODO: add Rob Collyer variable initialisation technique
-#W = tf.Variable(tf.truncated_normal([convo_patch, convo_patch, num_channels, convo_depth1],stddev= 1.0 / np.sqrt(float(convo_neurons1))),name='weights')
-
 #creating the main model
 def create_model(input_array,retained_pc):
 
     #conv layer 1
-    model = conv_layer(input_array,patch_size=3,input_size=3,
+    model,filter_summary = conv_layer(input_array,patch_size=3,input_size=3,
                        output_size=4,stride_shape=[1,1,1,1],padding='SAME',
                        layer_name='conv_1_1') # output: 32 x 32 x 4
-    model = conv_layer(model,patch_size=3,input_size=4,
+    model,_ = conv_layer(model,patch_size=3,input_size=4,
                        output_size=4,stride_shape=[1,1,1,1],padding='SAME',
                        layer_name='conv_1_2') # output: 32 x 32 x 4
     model = max_pooling(model,pool_size=2,padding='SAME',layer_name='conv_1_3') #output: 16 x 16 x 4
 
     #conv layer 2
-    model = conv_layer(model,patch_size=3,input_size=4,
+    model,_ = conv_layer(model,patch_size=3,input_size=4,
                        output_size=8,stride_shape=[1,1,1,1],padding='SAME',
                        layer_name='conv_2_1') #output: 16 x 16 x 8
-    model = conv_layer(model,patch_size=3,input_size=8,
+    model,_ = conv_layer(model,patch_size=3,input_size=8,
                        output_size=8,stride_shape=[1,1,1,1],padding='SAME',
                        layer_name='conv_2_2') #output: 16 x 16 x 8
     model = max_pooling(model,pool_size=2,padding='SAME',layer_name='conv_2_3') #output: 8 x 8 x 8
@@ -37,10 +34,10 @@ def create_model(input_array,retained_pc):
     model = tf.nn.dropout(model, retained_pc)
     model = fc_layer(model, input_size=32, output_size=32,layer_name='fc_2') #output: None x 32
     model = tf.nn.dropout(model, retained_pc)
-    model = fc_layer(model, input_size=32, output_size=8,layer_name='fc_3', act=tf.identity) #output: None x 8
+    model = fc_layer(model, input_size=32, output_size=6,layer_name='fc_3', act=tf.identity) #output: None x 6 #TODO: change back to 8
 
     #output
-    return model
+    return model,filter_summary
 
 
 #function to generically define a fully connected layer
@@ -60,7 +57,8 @@ def conv_layer(input_tensor,patch_size,input_size,output_size,stride_shape,paddi
         z = tf.nn.conv2d(input=input_tensor,filter=W,strides=stride_shape,
                          padding=padding) + b
         activations = act(z)
-        return activations
+        filter_summary = tf.summary.histogram('weights',W)
+        return activations,filter_summary
 
 #function to generically define a max pooling layer
 def max_pooling(input_tensor,pool_size,padding,layer_name):
@@ -71,7 +69,8 @@ def max_pooling(input_tensor,pool_size,padding,layer_name):
 
 #defining weights
 def weights(shape):
-    W = tf.truncated_normal(shape)
+    #W = tf.truncated_normal(shape)
+    W = tf.truncated_normal(shape,stddev= 1.0 / np.sqrt(float(shape[-1] + shape[-2])))
     return tf.Variable(W)
 
 #defining bias

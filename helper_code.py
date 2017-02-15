@@ -10,8 +10,6 @@ import seaborn as sns
 import os
 import datetime
 
-np.random.seed(2016)
-
 #function to define the variable scope
 def define_scope(function):
     attribute = '_cache_' + function.__name__
@@ -47,7 +45,14 @@ def create_random_batch(x,y,batch_size):
     indices = np.random.choice(x.shape[0], batch_size)
     x_batch = x[indices]
     y_batch = y[indices]
-    return x_batch,y_batch
+    return x_batch,y_batch#,indices
+
+# #unit test
+# x = np.random.rand(10,5)
+# y = np.random.rand(10,1)
+# _,_,ind = create_random_batch(x,y,7)
+# print(ind)
+
 
 def create_validation_set(X,y,valid_pc):
     len_data = X.shape[0]
@@ -68,7 +73,8 @@ def save_model(session,model_folder):
     saver.save(session, model_folder + 'model.checkpoint')
 
 def create_submission(predictions, test_id, info):
-    result1 = pd.DataFrame(predictions, columns=['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT'])
+    #result1 = pd.DataFrame(predictions, columns=['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT'])
+    result1 = pd.DataFrame(predictions, columns=['BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK']) # TODO: chnage back
     result1.loc[:, 'image'] = pd.Series(test_id, index=result1.index)
     now = datetime.datetime.now()
     sub_file = 'results/submission_' + info + '_' + str(now.strftime("%Y-%m-%d-%H-%M")) + '.csv'
