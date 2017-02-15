@@ -73,8 +73,8 @@ def save_model(session,model_folder):
     saver.save(session, model_folder + 'model.checkpoint')
 
 def create_submission(predictions, test_id, info):
-    #result1 = pd.DataFrame(predictions, columns=['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT'])
-    result1 = pd.DataFrame(predictions, columns=['BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK']) # TODO: chnage back
+    result1 = pd.DataFrame(predictions, columns=['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT'])
+    #result1 = pd.DataFrame(predictions, columns=['BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK'])
     result1.loc[:, 'image'] = pd.Series(test_id, index=result1.index)
     now = datetime.datetime.now()
     sub_file = 'results/submission_' + info + '_' + str(now.strftime("%Y-%m-%d-%H-%M")) + '.csv'

@@ -20,15 +20,20 @@ def train(model_folder):
 
     # define placeholders for tf model
     x = tf.placeholder(tf.float32, shape=[None, 32, 32, 3])
-    y_true = tf.placeholder(tf.float32, shape=[None, 6]) #TODO: change back to 8 afterwards
+    y_true = tf.placeholder(tf.float32, shape=[None, 8])
     retained_pc = tf.placeholder(tf.float32)
 
-    scores,filter_summary = create_model(x, retained_pc)
+    scores,layer_weights,layer_bias = create_model(x, retained_pc)
     probs = tf.nn.softmax(scores)
-    tf.add_to_collection('probs', probs)
+
+    # #sorting out the weights
+    # for i,weight in enumerate(layer_weights):
+    #     tf.summary.tensor_summary(str(i),weight)
+    #     # tf.summary.image([['%s_w%d%d' % (weight.name, i, j) for i in range(len(layer_weights))] for j in range(32)],
+    #     #                  weight)
 
     cross_entropy = tf.nn.softmax_cross_entropy_with_logits(scores, y_true)
-    train_step = tf.train.AdamOptimizer(learning_rate=2e-2).minimize(cross_entropy)
+    train_step = tf.train.AdamOptimizer().minimize(cross_entropy)
     #train_step = tf.train.MomentumOptimizer(learning_rate=5e-3,momentum=0.9,use_nesterov=True).minimize(cross_entropy)
     #train_step = tf.train.AdagradOptimizer(learning_rate=).minimize(cross_entropy)
 
@@ -39,13 +44,16 @@ def train(model_folder):
     logloss = tf.reduce_mean(cross_entropy)
 
     batch_size = 32
-    epochs = 2
+    epochs = 20
 
     # train the model
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        summary_writer = tf.summary.FileWriter('/tmp/logs', sess.graph)
-        #merged = tf.summary.merge_all()
+
+        # #logging
+        # summary_writer = tf.summary.FileWriter('tmp/logs', sess.graph)
+        # merged = tf.summary.merge_all()
+
         for epoch in range(epochs):
             print('----- Epoch', epoch, '-----')
             n_iter = X_train.shape[0] // batch_size
@@ -53,44 +61,19 @@ def train(model_folder):
 
             for i in range(n_iter):
                 X_batch, y_batch = create_random_batch(X_train, y_train, batch_size)
-                _, current_accuracy,summary_str = sess.run([train_step,accuracy,filter_summary],
-                                                           feed_dict={x: X_batch, y_true: y_batch, retained_pc:0.5})
 
-                for weight in layer_weights:
-                    tf.scalar_summary(
-                        [['%s_w%d%d' % (weight.name, i, j) for i in xrange(len(layer_weights))] for j in xrange(5)],
-                        weight)
-  #               current_accuracy = accuracy.eval(feed_dict={x: X_batch, y_true: y_batch, retained_pc:0.5})
+                _, current_accuracy = sess.run([train_step,accuracy],
+                                               feed_dict={x: X_batch, y_true: y_batch, retained_pc:0.5})
+
+                # _, current_accuracy, summary_str, printed_weights = sess.run(
+                #     [train_step, accuracy, merged, layer_weight_1],
+                #     feed_dict={x: X_batch, y_true: y_batch, retained_pc: 0.5})
+
                 total_accuracy += current_accuracy
-                summary_writer.add_summary(summary_str, i)
+                # summary_writer.add_summary(summary_str, i)
+
 
             print(' Train Accuracy:', total_accuracy / n_iter)
-
-            ###    "        for epoch in range(args.epochs):\n",
-    # "\n",
-    # "            print('----- Epoch', epoch, '-----')\n",
-    # "            total_loss = 0\n",
-    # "            for i in range(n // BATCH_SIZE):\n",
-    # "\n",
-    # "                inst_story = train_stories[i * BATCH_SIZE: (i + 1) * BATCH_SIZE]\n",
-    # "                inst_order = train_orders[i * BATCH_SIZE: (i + 1) * BATCH_SIZE]\n",
-    # "                feed_dict = {datum: inst_story, order: inst_order}\n",
-    # "                _, current_loss = sess.run([optim_op, loss], feed_dict=feed_dict)\n",
-    # "                total_loss += current_loss\n",
-    # "\n",
-    # "                if i % 20 == 0:\n",
-    # "                    print('Batch: ' + str(i))\n",
-    # "\n",
-    # "            print(' Train loss:', total_loss / n)\n",
-    # "\n",
-    # "            train_feed_dict = {datum: train_stories, order: train_orders}\n",
-    # "            train_predicted = sess.run(predict, feed_dict=train_feed_dict)\n",
-    # "            train_accuracy = nn.calculate_accuracy(train_orders, train_predicted)\n",
-    # "            print(' Train accuracy:', train_accuracy)\n",
-
-
-
-
 
             # calc train loss
             train_logloss = logloss.eval(feed_dict={x: X_train, y_true: y_train, retained_pc: 1.0})
@@ -122,7 +105,6 @@ if __name__ == "__main__":
 
     train(model_folder)
 
-    #TODO: set up visualation via tensorboard
-    #TODO: introduce seed
+    #TODO: understand tensorboard better
 
 

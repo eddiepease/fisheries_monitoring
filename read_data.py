@@ -79,8 +79,8 @@ def load_train():
     start_time = time.time()
 
     print('Read train images')
-    #folders = ['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT']
-    folders = ['BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK']
+    folders = ['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT']
+    #folders = ['BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK']
     for fld in folders:
         index = folders.index(fld)
         print('Load folder {} (Index: {})'.format(fld, index))
@@ -124,7 +124,7 @@ def read_and_normalize_train_data():
 
     print('Convert to float...')
     train_data = train_data.astype('float32')
-    train_data = train_data / 255
+    train_data = train_data / 255 - 0.5
     train_target = one_hot(train_target)
 
     print('Train shape:', train_data.shape)
@@ -140,7 +140,7 @@ def read_and_normalize_test_data():
     # test_data = test_data.transpose((0, 3, 1, 2))
 
     test_data = test_data.astype('float32')
-    test_data = test_data / 255
+    test_data = test_data / 255 - 0.5
 
     print('Test shape:', test_data.shape)
     print(test_data.shape[0], 'test samples')
