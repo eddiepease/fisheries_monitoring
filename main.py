@@ -1,5 +1,5 @@
 ##########
-#code to solve fish problem
+# code to solve fish problem
 ##########
 
 import os
@@ -14,11 +14,12 @@ from sklearn.metrics import log_loss
 from keras import __version__ as keras_version
 import warnings
 
-from read_data import load_saved_normalised_train_data,load_saved_normalised_test_data
-from helper_code import create_submission,dict_to_list,merge_several_folds_mean
+from read_data import load_saved_normalised_train_data, load_saved_normalised_test_data
+from helper_code import create_submission, dict_to_list, merge_several_folds_mean
 from model import create_model
 
-#warnings.filterwarnings("ignore")
+
+# warnings.filterwarnings("ignore")
 
 
 def get_validation_predictions(train_data, predictions_valid):
@@ -104,5 +105,3 @@ if __name__ == '__main__':
     num_folds = 3
     info_string, models = run_cross_validation_create_models(num_folds)
     run_cross_validation_process_test(info_string, models)
-
-
