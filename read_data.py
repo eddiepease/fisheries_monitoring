@@ -167,3 +167,6 @@ def load_saved_normalised_test_data(saved):
 
     return test_data, test_id
 
+
+#TODO: create main function to load images
+

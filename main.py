@@ -4,154 +4,21 @@
 
 import os
 import glob
-import cv2
 import datetime
 import pandas as pd
+import numpy as np
 import time
-import warnings
-
-#warnings.filterwarnings("ignore")
-
 from sklearn.model_selection import KFold
-from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, Flatten
-from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2D
-from keras.optimizers import SGD
 from keras.callbacks import EarlyStopping
-from keras.utils import np_utils
 from sklearn.metrics import log_loss
 from keras import __version__ as keras_version
+import warnings
 
+from read_data import load_saved_normalised_train_data,load_saved_normalised_test_data
+from helper_code import create_submission,dict_to_list,merge_several_folds_mean
+from model import create_model
 
-def get_im_cv2(path):
-    img = cv2.imread(path)
-    resized = cv2.resize(img, (32, 32), cv2.INTER_LINEAR)
-    return resized
-
-
-def load_train():
-    X_train = []
-    X_train_id = []
-    y_train = []
-    start_time = time.time()
-
-    print('Read train images')
-    folders = ['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT']
-    for fld in folders:
-        index = folders.index(fld)
-        print('Load folder {} (Index: {})'.format(fld, index))
-        path = os.path.join('..', 'input', 'train', fld, '*.jpg')
-        files = glob.glob(path)
-        for fl in files:
-            flbase = os.path.basename(fl)
-            img = get_im_cv2(fl)
-            X_train.append(img)
-            X_train_id.append(flbase)
-            y_train.append(index)
-
-    print('Read train data time: {} seconds'.format(round(time.time() - start_time, 2)))
-    return X_train, y_train, X_train_id
-
-
-def load_test():
-    path = os.path.join('..', 'input', 'test_stg1', '*.jpg')
-    files = sorted(glob.glob(path))
-
-    X_test = []
-    X_test_id = []
-    for fl in files:
-        flbase = os.path.basename(fl)
-        img = get_im_cv2(fl)
-        X_test.append(img)
-        X_test_id.append(flbase)
-
-    return X_test, X_test_id
-
-
-def create_submission(predictions, test_id, info):
-    result1 = pd.DataFrame(predictions, columns=['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT'])
-    result1.loc[:, 'image'] = pd.Series(test_id, index=result1.index)
-    now = datetime.datetime.now()
-    sub_file = 'submission_' + info + '_' + str(now.strftime("%Y-%m-%d-%H-%M")) + '.csv'
-    result1.to_csv(sub_file, index=False)
-
-
-def read_and_normalize_train_data():
-    train_data, train_target, train_id = load_train()
-
-    print('Convert to numpy...')
-    train_data = np.array(train_data, dtype=np.uint8)
-    train_target = np.array(train_target, dtype=np.uint8)
-
-    print('Reshape...')
-    train_data = train_data.transpose((0, 3, 1, 2))
-
-    print('Convert to float...')
-    train_data = train_data.astype('float32')
-    train_data = train_data / 255
-    train_target = np_utils.to_categorical(train_target, 8)
-
-    print('Train shape:', train_data.shape)
-    print(train_data.shape[0], 'train samples')
-    return train_data, train_target, train_id
-
-
-def read_and_normalize_test_data():
-    start_time = time.time()
-    test_data, test_id = load_test()
-
-    test_data = np.array(test_data, dtype=np.uint8)
-    test_data = test_data.transpose((0, 3, 1, 2))
-
-    test_data = test_data.astype('float32')
-    test_data = test_data / 255
-
-    print('Test shape:', test_data.shape)
-    print(test_data.shape[0], 'test samples')
-    print('Read and process test data time: {} seconds'.format(round(time.time() - start_time, 2)))
-    return test_data, test_id
-
-
-def dict_to_list(d):
-    ret = []
-    for i in d.items():
-        ret.append(i[1])
-    return ret
-
-
-def merge_several_folds_mean(data, nfolds):
-    a = np.array(data[0])
-    for i in range(1, nfolds):
-        a += np.array(data[i])
-    a /= nfolds
-    return a.tolist()
-
-
-def create_model():
-    model = Sequential()
-    model.add(ZeroPadding2D((1, 1), input_shape=(3, 32, 32), dim_ordering='th'))
-    model.add(Convolution2D(4, 3, 3, activation='relu', dim_ordering='th'))
-    model.add(ZeroPadding2D((1, 1), dim_ordering='th'))
-    model.add(Convolution2D(4, 3, 3, activation='relu', dim_ordering='th'))
-    model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2), dim_ordering='th'))
-
-    model.add(ZeroPadding2D((1, 1), dim_ordering='th'))
-    model.add(Convolution2D(8, 3, 3, activation='relu', dim_ordering='th'))
-    model.add(ZeroPadding2D((1, 1), dim_ordering='th'))
-    model.add(Convolution2D(8, 3, 3, activation='relu', dim_ordering='th'))
-    model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2), dim_ordering='th'))
-
-    model.add(Flatten())
-    model.add(Dense(32, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(32, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(8, activation='softmax'))
-
-    sgd = SGD(lr=1e-2, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(optimizer=sgd, loss='categorical_crossentropy')
-
-    return model
+#warnings.filterwarnings("ignore")
 
 
 def get_validation_predictions(train_data, predictions_valid):
@@ -167,14 +34,14 @@ def run_cross_validation_create_models(nfolds=10):
     nb_epoch = 30
     random_state = 51
 
-    train_data, train_target, train_id = read_and_normalize_train_data()
+    train_data, train_target, train_id = load_saved_normalised_train_data(saved=True)
 
     yfull_train = dict()
-    kf = KFold(len(train_id), n_folds=nfolds, shuffle=True, random_state=random_state)
+    kf = KFold(n_splits=nfolds, shuffle=True, random_state=random_state)
     num_fold = 0
     sum_score = 0
     models = []
-    for train_index, test_index in kf:
+    for train_index, test_index in kf.split(train_data):
         model = create_model()
         X_train = train_data[train_index]
         Y_train = train_target[train_index]
@@ -222,7 +89,7 @@ def run_cross_validation_process_test(info_string, models):
         model = models[i]
         num_fold += 1
         print('Start KFold number {} from {}'.format(num_fold, nfolds))
-        test_data, test_id = read_and_normalize_test_data()
+        test_data, test_id = load_saved_normalised_test_data(saved=True)
         test_prediction = model.predict(test_data, batch_size=batch_size, verbose=2)
         yfull_test.append(test_prediction)
 

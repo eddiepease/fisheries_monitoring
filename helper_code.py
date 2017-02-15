@@ -74,6 +74,19 @@ def create_submission(predictions, test_id, info):
     sub_file = 'results/submission_' + info + '_' + str(now.strftime("%Y-%m-%d-%H-%M")) + '.csv'
     result1.to_csv(sub_file, index=False)
 
+def dict_to_list(d):
+    ret = []
+    for i in d.items():
+        ret.append(i[1])
+    return ret
+
+def merge_several_folds_mean(data, nfolds):
+    a = np.array(data[0])
+    for i in range(1, nfolds):
+        a += np.array(data[i])
+    a /= nfolds
+    return a.tolist()
+
 
 # #unit test
 # X = np.random.rand(10,3)
