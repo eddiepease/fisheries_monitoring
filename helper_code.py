@@ -54,23 +54,12 @@ def create_random_batch(x,y,batch_size):
 # print(ind)
 
 
-def create_validation_set(X,y,valid_pc):
-    len_data = X.shape[0]
-    valid_num = int(len_data*valid_pc)
-    index_valid = np.random.choice(len_data, valid_num,replace=False)
-    index_train = np.setdiff1d(np.array(range(0,len_data)),index_valid)
-
-    X_train,y_train = X[index_train],y[index_train]
-    X_valid,y_valid = X[index_valid],y[index_valid]
-
-    return X_train,y_train,X_valid,y_valid
-
 # save the model params to the hard drive
-def save_model(session,model_folder):
+def save_model(session,model_folder,model_name):
     if not os.path.exists(model_folder):
         os.mkdir(model_folder)
     saver = tf.train.Saver()
-    saver.save(session, model_folder + 'model.checkpoint')
+    saver.save(session, model_folder + str(model_name))
 
 def create_submission(predictions, test_id, info):
     result1 = pd.DataFrame(predictions, columns=['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT'])
@@ -79,6 +68,13 @@ def create_submission(predictions, test_id, info):
     now = datetime.datetime.now()
     sub_file = 'results/submission_' + info + '_' + str(now.strftime("%Y-%m-%d-%H-%M")) + '.csv'
     result1.to_csv(sub_file, index=False)
+
+def merge_several_folds_mean(data, nfolds):
+    a = np.array(data[0])
+    for i in range(1, nfolds):
+        a += np.array(data[i])
+    a /= nfolds
+    return a.tolist()
 
 
 # #unit test
