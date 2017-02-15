@@ -12,22 +12,7 @@ import datetime
 
 np.random.seed(2016)
 
-#function to define the variable scope
-def define_scope(function):
-    attribute = '_cache_' + function.__name__
 
-    @property
-    @functools.wraps(function)
-    def decorator(self):
-        if not hasattr(self, attribute):
-            with tf.variable_scope(function.__name__, str(__name__)):
-                setattr(self, attribute, function(self))
-        return getattr(self, attribute)
-
-    return decorator
-
-
-#TODO: function which creates a confusion matrix
 def create_confusion_matrix(prediction,y_label,name):
 
     test_true = pd.Series(np.argmax(y_label, axis=1), name="Actual")
@@ -41,38 +26,25 @@ def create_confusion_matrix(prediction,y_label,name):
     return con_mat
 
 
-
-#function to generate random batches of the data
-def create_random_batch(x,y,batch_size):
-    indices = np.random.choice(x.shape[0], batch_size)
-    x_batch = x[indices]
-    y_batch = y[indices]
-    return x_batch,y_batch
-
-def create_validation_set(X,y,valid_pc):
-    len_data = X.shape[0]
-    valid_num = int(len_data*valid_pc)
-    index_valid = np.random.choice(len_data, valid_num,replace=False)
-    index_train = np.setdiff1d(np.array(range(0,len_data)),index_valid)
-
-    X_train,y_train = X[index_train],y[index_train]
-    X_valid,y_valid = X[index_valid],y[index_valid]
-
-    return X_train,y_train,X_valid,y_valid
-
-# save the model params to the hard drive
-def save_model(session,model_folder):
-    if not os.path.exists(model_folder):
-        os.mkdir(model_folder)
-    saver = tf.train.Saver()
-    saver.save(session, model_folder + 'model.checkpoint')
-
 def create_submission(predictions, test_id, info):
     result1 = pd.DataFrame(predictions, columns=['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT'])
     result1.loc[:, 'image'] = pd.Series(test_id, index=result1.index)
     now = datetime.datetime.now()
     sub_file = 'results/submission_' + info + '_' + str(now.strftime("%Y-%m-%d-%H-%M")) + '.csv'
     result1.to_csv(sub_file, index=False)
+
+def dict_to_list(d):
+    ret = []
+    for i in d.items():
+        ret.append(i[1])
+    return ret
+
+def merge_several_folds_mean(data, nfolds):
+    a = np.array(data[0])
+    for i in range(1, nfolds):
+        a += np.array(data[i])
+    a /= nfolds
+    return a.tolist()
 
 
 # #unit test

@@ -28,44 +28,6 @@ def one_hot(X):
 # test_output = one_hot(test)
 # print(test_output)
 
-#attempt to read from zipped file
-
-# def load_train_trial():
-#     X_train = []
-#     X_train_id = []
-#     y_train = []
-#     start_time = time.time()
-#
-#     print('Read train images')
-#     #folders = ['OTHER', 'SHARK']
-#     with zipfile.ZipFile('data/train.zip') as z:
-#         folders = ['OTHER', 'SHARK']
-#         for fld in folders:
-#             index = folders.index(fld)
-#             print('Load folder {} (Index: {})'.format(fld, index))
-#             files = [im for im in z.namelist() if str(fld) in im]
-#             files = files[1:len(files)]
-#             for im in files:
-#                 with z.open(im) as file:
-#                     flbase = im.split('/')[1]
-#                     img = np.array(Image.open(file))
-#                     X_train.append(img)
-#                     X_train_id.append(flbase)
-#                     y_train.append(index)
-#                 file.close()
-#
-#
-#
-#     print('Read train data time: {} seconds'.format(round(time.time() - start_time, 2)))
-#     return X_train, y_train, X_train_id
-#
-#
-# #unit test
-# X_train, y_train, X_train_id = load_train_trial()
-# print(len(X_train))
-# print(len(y_train))
-# print(len(X_train_id))
-
 
 def load_train():
     X_train = []
@@ -166,4 +128,9 @@ def load_saved_normalised_test_data(saved):
         test_data, test_id = read_and_normalize_test_data()
 
     return test_data, test_id
+
+
+if __name__ == "__main__":
+    read_and_normalize_train_data()
+    read_and_normalize_test_data()
 
