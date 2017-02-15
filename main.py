@@ -18,17 +18,6 @@ from read_data import load_saved_normalised_train_data, load_saved_normalised_te
 from helper_code import create_submission, dict_to_list, merge_several_folds_mean
 from model import create_model
 
-
-# warnings.filterwarnings("ignore")
-
-
-def get_validation_predictions(train_data, predictions_valid):
-    pv = []
-    for i in range(len(train_data)):
-        pv.append(predictions_valid[i])
-    return pv
-
-
 def run_cross_validation_create_models(nfolds=10):
     # input image dimensions
     batch_size = 16
