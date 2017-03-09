@@ -68,7 +68,7 @@ def load_test():
     return X_test, X_test_id
 
 
-def read_and_normalize_train_data():
+def read_and_normalize_train_data(save_as_npy=False):
     train_data, train_target, train_id = load_train()
 
     print('Convert to numpy...')
@@ -80,15 +80,22 @@ def read_and_normalize_train_data():
 
     print('Convert to float...')
     train_data = train_data.astype('float32')
-    train_data = train_data / 255
+    train_data = train_data / 255.
     train_target = one_hot(train_target)
 
     print('Train shape:', train_data.shape)
     print(train_data.shape[0], 'train samples')
+
+    if save_as_npy:
+        print('Saving training data as .npy files')
+        np.save(file='data/train_data.npy', arr=train_data)
+        np.save(file='data/train_target.npy', arr=train_target)
+        np.save(file='data/train_id.npy', arr=train_id)
+
     return train_data, train_target, train_id
 
 
-def read_and_normalize_test_data():
+def read_and_normalize_test_data(save_as_npy=False):
     start_time = time.time()
     test_data, test_id = load_test()
 
@@ -96,11 +103,17 @@ def read_and_normalize_test_data():
     # test_data = test_data.transpose((0, 3, 1, 2))
 
     test_data = test_data.astype('float32')
-    test_data = test_data / 255
+    test_data = test_data / 255.
 
     print('Test shape:', test_data.shape)
     print(test_data.shape[0], 'test samples')
     print('Read and process test data time: {} seconds'.format(round(time.time() - start_time, 2)))
+
+    if save_as_npy:
+        print('Saving test data as .npy files')
+        np.save(file='data/test_data.npy', arr=test_data)
+        np.save(file='data/test_id.npy', arr=test_id)
+
     return test_data, test_id
 
 
