@@ -18,6 +18,9 @@ A solution to the Nature Conservancy Fisheries Monitoring Kaggle competition - h
 ###General information
 The script to classify the pictures is in keras (with tensorflow back-end). I have tried for a couple of days to replicate the script in tensorflow but couldn't get it working. It is very close to being finished though, if you want to have a look at it, look at the 'improve_baseline' branch. It shouldn't matter if anyone else were to pick it up though as the code can be quite modular and the significant increases in accuracy can be gained by seperate modules (see below).
 
+To install keras on Mac when you are using conda just activate whatever python environment you are using and call:
+conda install -c conda-forge keras=1.2.2
+
 This dataset is tricky in part because the fish is only a very small part of the image and several of the images are taken in quick succession one after another. Therefore, it is hard to split into a effective train/test set and get a reliable score on the Kaggle dataset. So the script that is uploaded is 'learning' the boat rather than the fish. 
 
 ###Suggested future developments
