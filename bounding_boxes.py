@@ -121,10 +121,10 @@ for i, c in enumerate(categories):
     print('Processing category: ' + str(c))
 
     # Directory where the source images are, for each category
-    rootdir = './data/train_small_source/{}'.format(categories[i])
+    rootdir = './data/train/{}'.format(categories[i])
 
     # Directory where the cropped images will be saved, for each category
-    newdir = './data/train_small_cropped/{}'.format(categories[i])
+    newdir = './data/train_cropped/{}'.format(categories[i])
 
     for fish_image_name in os.listdir(rootdir):
 
