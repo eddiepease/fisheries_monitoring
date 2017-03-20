@@ -26,12 +26,11 @@ def create_confusion_matrix(prediction,y_label,name):
     return con_mat
 
 
-def create_submission(predictions, test_id, info):
-    result1 = pd.DataFrame(predictions, columns=['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT'])
-    result1.loc[:, 'image'] = pd.Series(test_id, index=result1.index)
+def create_submission(df, test_id, info='bb_test'):
+    df.loc[:, 'image'] = pd.Series(test_id, index=df.index)
     now = datetime.datetime.now()
     sub_file = 'results/submission_' + info + '_' + str(now.strftime("%Y-%m-%d-%H-%M")) + '.csv'
-    result1.to_csv(sub_file, index=False)
+    df.to_csv(sub_file, index=False)
 
 
 def dict_to_list(d):

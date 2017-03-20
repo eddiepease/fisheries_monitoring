@@ -9,7 +9,7 @@ from keras.optimizers import SGD
 
 #this is the model which is used to classify the whole image i.e. without bounding box
 # so this model in effect classifies the boat which is used.
-def create_model():
+def create_boat_model():
     model = Sequential()
     model.add(ZeroPadding2D((1, 1), input_shape=(32, 32, 3), dim_ordering='tf'))
     model.add(Convolution2D(4, 3, 3, activation='relu', dim_ordering='tf'))
