@@ -18,7 +18,8 @@ from read_data import load_saved_normalised_train_data, load_saved_normalised_te
 from helper_code import create_submission, dict_to_list, merge_several_folds_mean
 from model import create_model
 
-def run_cross_validation_create_models(nfolds=10):
+def run_cv_convnet_whole_image(nfolds=10):
+    print('Running the conv net that applies to the whole image....')
     # input image dimensions
     batch_size = 16
     nb_epoch = 30
@@ -68,6 +69,26 @@ def run_cross_validation_create_models(nfolds=10):
     return info_string, models
 
 
+def run_cv_conv_bb_image(nfolds=10):
+    print('Using CV to assess the accuracy of the bb algorithm')
+
+    # run a cross-validation loop as above to
+    # a) assess the accuracy of the bb classifier on its own
+
+    pass
+
+#TODO: rethink this according to thoughts on paper
+
+def run_full_convnet_bb_image():
+    print('Running the convnet that applies to the bounding box images...')
+
+    #refer to saved location of the bb image
+
+    # then run a model on the whole dataset
+
+    #output this fitted model
+
+
 def run_cross_validation_process_test(info_string, models):
     batch_size = 16
     num_fold = 0
@@ -92,5 +113,6 @@ def run_cross_validation_process_test(info_string, models):
 if __name__ == '__main__':
     print('Keras version: {}'.format(keras_version))
     num_folds = 3
-    info_string, models = run_cross_validation_create_models(num_folds)
+    info_string, models = run_cv_convnet_whole_image(num_folds)
+
     run_cross_validation_process_test(info_string, models)

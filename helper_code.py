@@ -40,7 +40,8 @@ def dict_to_list(d):
         ret.append(i[1])
     return ret
 
-
+#this code finds the average of the results from all the folds
+#outputs a list of a list - list of prob of every category inside list of every test value
 def merge_several_folds_mean(data, nfolds):
     a = np.array(data[0])
     for i in range(1, nfolds):
