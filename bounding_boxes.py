@@ -94,14 +94,13 @@ def calculate_bounding_box(xmin, xmax, ymin, ymax, nrows, ncols):
 
 ##########################################################
 # Rough structure
-# For each image, loop through 5 times, each time:
+# For each image:
 # - Finding the fishy bits of the image
 # - Using a GMM to fit a gaussian over the fishy points,
 #   to help with robustness to outliers.
 # - Calculate a realistic bounding box (i.e. inside image,
 #   not too small.
-# - (Currently) set everything that is not in the bounding
-#   box to black.
+# - Crop the image to the bounding box size.
 # - Save image.
 #
 ##########################################################
@@ -113,18 +112,31 @@ def calculate_bounding_box(xmin, xmax, ymin, ymax, nrows, ncols):
 # fish images: ./data/train_cropped   with similar
 # folders for the categories.
 
+FULL_DATASET = True  # Set to false to use different directories. For testing.
 
-categories = ['ALB', 'BET', 'DOL', 'LAG', 'NoG', 'OTHER', 'SHARK', 'YFT']
+if FULL_DATASET:
+    categories = ['ALB', 'BET', 'DOL', 'LAG', 'NoG', 'OTHER', 'SHARK', 'YFT']
+else:
+    categories = ['ALB', 'SHARK']
+
 
 for i, c in enumerate(categories):
 
     print('Processing category: ' + str(c))
 
-    # Directory where the source images are, for each category
-    rootdir = './data/train/{}'.format(categories[i])
+    if FULL_DATASET:
+        # Directory where the source images are, for each category
+        rootdir = './data/train/{}'.format(categories[i])
 
-    # Directory where the cropped images will be saved, for each category
-    newdir = './data/train_cropped/{}'.format(categories[i])
+        # Directory where the cropped images will be saved, for each category
+        newdir = './data/train_cropped/{}'.format(categories[i])
+
+    else:
+        # Directory where the source images are, for each category
+        rootdir = './data/train_small/{}'.format(categories[i])
+
+        # Directory where the cropped images will be saved, for each category
+        newdir = './data/train_cropped_small/{}'.format(categories[i])
 
     for fish_image_name in os.listdir(rootdir):
 
@@ -138,50 +150,48 @@ for i, c in enumerate(categories):
             # Get all points with fish in the top label.  NB these are not pixels, but
             # seem to be a grid over the image.
             fish_label = 'fish.n.01'
-            clf = OverfeatLocalizer(match_strings=[fish_label], top_n=5)  # top_n is hyperparameter
+            clf = OverfeatLocalizer(match_strings=[fish_label], top_n=1)  # top_n is hyperparameter
 
-            bounding_box_gmm_sizes = [4, 4, 3, 3, 3]  # can change gmm selection as iterations proceed
+            bounding_box_gmm_size = 3  # can change gmm selection as iterations proceed
 
-            for j in range(5):
+            # [n x 2] numpy array containing grid points (not every pixel) that
+            # is fishy.
+            fish_points = clf.predict(fish_image)
 
-                # [n x 2] numpy array containing grid points (not every pixel) that
-                # is fishy.
-                fish_points = clf.predict(fish_image)
+            if fish_points:   # i.e. list of fish points is not empty because there are none
 
-                if fish_points:   # i.e. list of fish points is not empty because there are none
+                # Get the number of fishy points.  This is important because if there
+                # are e.g. 1 or none then we can't fit a GMM.
 
-                    # Get the number of fishy points.  This is important because if there
-                    # are e.g. 1 or none then we can't fit a GMM.
+                num_fish_points, _ = np.shape(fish_points[0])
 
-                    num_fish_points, _ = np.shape(fish_points[0])
+                if num_fish_points > 5:
 
-                    if num_fish_points > 5:
+                    my_gmm = GMM()
+                    my_gmm.fit(fish_points[0])
+                    xmin, xmax, ymin, ymax = convert_gmm_to_box(my_gmm, width=bounding_box_gmm_size)
 
-                        my_gmm = GMM()
-                        my_gmm.fit(fish_points[0])
-                        xmin, xmax, ymin, ymax = convert_gmm_to_box(my_gmm, width=bounding_box_gmm_sizes[j])
+                    # For this first iteration we want to have some extra pixels because
+                    # the bounding boxes tend to cut bits of fish off.
 
-                        # For this first iteration we want to have some extra pixels because
-                        # the bounding boxes tend to cut bits of fish off.
+                    xmin -= 30
+                    ymin -= 30
+                    xmax += 30
+                    ymax += 30
 
-                        xmin -= 30
-                        ymin -= 30
-                        xmax += 30
-                        ymax += 30
+                    # Prevent indexing outside the image.
+                    # Get image size
+                    nrows, ncols, nchannels = np.shape(fish_image)
 
-                        # Prevent indexing outside the image.
-                        # Get image size
-                        nrows, ncols, nchannels = np.shape(fish_image)
+                    xmin, xmax, ymin, ymax = calculate_bounding_box(xmin, xmax, ymin, ymax, nrows, ncols)
 
-                        xmin, xmax, ymin, ymax = calculate_bounding_box(xmin, xmax, ymin, ymax, nrows, ncols)
-
-                        # Fill in the bits beyond the bounding box with black
-                        fish_image[:xmin, :, :] = 0.
-                        fish_image[xmax:, :, :] = 0.
-                        fish_image[:, :ymin, :] = 0.
-                        fish_image[:, ymax:, :] = 0.
+                    # Fill in the bits beyond the bounding box with black
+                    #fish_image[:xmin, :, :] = 0.
+                    #fish_image[xmax:, :, :] = 0.
+                    #fish_image[:, :ymin, :] = 0.
+                    #fish_image[:, ymax:, :] = 0.
 
             # save image, cropped to the size of the final bounding box
-            # fish_image_cropped = fish_image[xmin:xmax+1, ymin:ymax+1, :]
+            fish_image_cropped = fish_image[xmin:xmax+1, ymin:ymax+1, :]
 
-            misc.imsave(os.path.join(newdir, fish_image_name), fish_image)
+            misc.imsave(os.path.join(newdir, fish_image_name), fish_image_cropped)
