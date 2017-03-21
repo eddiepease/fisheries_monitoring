@@ -13,7 +13,7 @@ from PIL import Image
 
 def get_im(path):
     img = imread(path)
-    resized = resize(img, (32, 32, 3))
+    resized = resize(img, (128, 128, 3))
     #imsave('test.png',resized) # to test resize working
     return resized
 
@@ -29,7 +29,7 @@ def one_hot(X):
 # print(test_output)
 
 
-def load_train():
+def load_train(im_folder):
 
     start_time = time.time()
 
@@ -42,7 +42,7 @@ def load_train():
     for fld in folders:
         index = folders.index(fld)
         print('Load folder {} (Index: {})'.format(fld, index))
-        path = os.path.join('data', 'train', fld, '*.jpg')
+        path = os.path.join('data', im_folder, fld, '*.png')
         files = glob.glob(path)
         for fl in files:
             flbase = os.path.basename(fl)
@@ -56,14 +56,14 @@ def load_train():
     return X_train, y_train, X_train_id
 
 
-def load_test():
+def load_test(im_folder):
 
     start_time = time.time()
 
     X_test = []
     X_test_id = []
 
-    path = os.path.join('data', 'test_stg1', '*.jpg')
+    path = os.path.join('data', im_folder, '*.png')
     files = sorted(glob.glob(path))
 
     for fl in files:
@@ -77,9 +77,9 @@ def load_test():
     return X_test, X_test_id
 
 
-def read_and_normalize_train_data(save_as_npy=False):
+def read_and_normalize_train_data(im_folder,save_as_npy=False):
 
-    train_data, train_target, train_id = load_train()
+    train_data, train_target, train_id = load_train(im_folder)
 
     print('Converting training data to numpy array...')
     train_data = np.array(train_data, dtype='float32')
@@ -92,16 +92,16 @@ def read_and_normalize_train_data(save_as_npy=False):
 
     if save_as_npy:
         print('Saving training data as .npy files')
-        np.save(file='data/train_data.npy', arr=train_data)
-        np.save(file='data/train_target.npy', arr=train_target)
-        np.save(file='data/train_id.npy', arr=train_id)
+        np.save(file='data/' + im_folder + 'train_data.npy', arr=train_data)
+        np.save(file='data/' + im_folder + 'train_target.npy', arr=train_target)
+        np.save(file='data/' + im_folder + 'train_id.npy', arr=train_id)
 
     return train_data, train_target, train_id
 
 
-def read_and_normalize_test_data(save_as_npy=False):
+def read_and_normalize_test_data(im_folder,save_as_npy=False):
 
-    test_data, test_id = load_test()
+    test_data, test_id = load_test(im_folder)
 
     print('Converting test data to numpy array...')
     test_data = np.array(test_data, dtype='float32')
@@ -111,19 +111,19 @@ def read_and_normalize_test_data(save_as_npy=False):
 
     if save_as_npy:
         print('Saving test data as .npy files')
-        np.save(file='data/test_data.npy', arr=test_data)
-        np.save(file='data/test_id.npy', arr=test_id)
+        np.save(file='data/' + im_folder + 'test_data.npy', arr=test_data)
+        np.save(file='data/' + im_folder + 'test_id.npy', arr=test_id)
 
     return test_data, test_id
 
 
-def load_saved_normalised_train_data(saved):
+def load_saved_normalised_train_data(im_folder,saved):
 
     if saved:
 
-        train_data, train_target, train_id = np.load('data/train_data.npy'), \
-                                             np.load('data/train_target.npy'), \
-                                             np.load('data/train_id.npy')
+        train_data, train_target, train_id = np.load('data/' + im_folder + 'train_data.npy'), \
+                                             np.load('data/' + im_folder + 'train_target.npy'), \
+                                             np.load('data/' + im_folder + 'train_id.npy')
 
     else:
         train_data, train_target, train_id = read_and_normalize_train_data()
@@ -131,12 +131,12 @@ def load_saved_normalised_train_data(saved):
     return train_data, train_target, train_id
 
 
-def load_saved_normalised_test_data(saved):
+def load_saved_normalised_test_data(im_folder,saved):
 
     if saved:
 
-        test_data, test_id = np.load('data/test_data.npy'), \
-                             np.load('data/test_id.npy')
+        test_data, test_id = np.load('data/' + im_folder + 'test_data.npy'), \
+                             np.load('data/' + im_folder + 'test_id.npy')
 
     else:
         test_data, test_id = read_and_normalize_test_data()
@@ -145,6 +145,6 @@ def load_saved_normalised_test_data(saved):
 
 
 if __name__ == "__main__":
-    read_and_normalize_train_data()
-    read_and_normalize_test_data()
+    read_and_normalize_train_data('train_cropped_ph/',save_as_npy=True)
+    read_and_normalize_test_data('test_cropped_ph/',save_as_npy=True)
 
