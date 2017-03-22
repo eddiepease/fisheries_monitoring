@@ -115,7 +115,7 @@ def calculate_bounding_box(xmin, xmax, ymin, ymax, nrows, ncols):
 FULL_DATASET = True  # Set to false to use different directories. For testing.
 
 if FULL_DATASET:
-    categories = ['ALB', 'BET', 'DOL', 'LAG', 'NoG', 'OTHER', 'SHARK', 'YFT']
+    categories = ['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT']
 else:
     categories = ['ALB', 'SHARK']
 
@@ -184,12 +184,6 @@ for i, c in enumerate(categories):
                     nrows, ncols, nchannels = np.shape(fish_image)
 
                     xmin, xmax, ymin, ymax = calculate_bounding_box(xmin, xmax, ymin, ymax, nrows, ncols)
-
-                    # Fill in the bits beyond the bounding box with black
-                    #fish_image[:xmin, :, :] = 0.
-                    #fish_image[xmax:, :, :] = 0.
-                    #fish_image[:, :ymin, :] = 0.
-                    #fish_image[:, ymax:, :] = 0.
 
             # save image, cropped to the size of the final bounding box
             fish_image_cropped = fish_image[xmin:xmax+1, ymin:ymax+1, :]
